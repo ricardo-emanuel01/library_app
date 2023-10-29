@@ -10,6 +10,8 @@ def test_create_new_user(client):
             'username': 'mariana',
             'email': 'mariana@example.com',
             'password': 'salgadinhodeuva',
+            'genre1': 'action',
+            'genre2': 'adventure',
         },
     )
 
@@ -17,6 +19,8 @@ def test_create_new_user(client):
     assert response.json() == {
         'username': 'mariana',
         'email': 'mariana@example.com',
+        'genre1': 'action',
+        'genre2': 'adventure',
         'id': 1,
     }
 
@@ -28,6 +32,8 @@ def test_create_user_with_existent_email(client, user):
             'username': 'username',
             'password': 'fizzbyzz',
             'email': user.email,
+            'genre1': 'action',
+            'genre2': 'adventure',
         },
     )
 
@@ -44,6 +50,8 @@ def test_create_user_with_existent_username(client, user):
             'username': user.username,
             'password': 'fizzbyzz',
             'email': 'user@example.com',
+            'genre1': 'action',
+            'genre2': 'adventure',
         },
     )
 
@@ -85,6 +93,8 @@ def test_update_user(client, user, token):
         'username': 'bob',
         'email': 'bob@example.com',
         'id': user.id,
+        'genre1': user.genre1,
+        'genre2': user.genre2,
     }
 
 
@@ -96,6 +106,8 @@ def test_update_another_user(client, another_user, token):
             'username': 'bob',
             'email': 'bob@example.com',
             'password': 'jasdasd',
+            'genre1': 'action',
+            'genre2': 'adventure',
         },
     )
 

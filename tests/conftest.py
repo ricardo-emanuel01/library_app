@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from library_app.app import app
 from library_app.database import get_session
 from library_app.models import Base, User
+from library_app.schemas import Genre
 from library_app.security import get_password_hash
 
 
@@ -83,3 +84,5 @@ class UserFactory(factory.Factory):
     username = factory.LazyAttribute(lambda obj: f'test{obj.id}')
     email = factory.LazyAttribute(lambda obj: f'{obj.username}@test.com')
     password = factory.LazyAttribute(lambda obj: f'{obj.username}{obj.id}')
+    genre1 = factory.fuzzy.FuzzyChoice(Genre)
+    genre2 = factory.fuzzy.FuzzyChoice(Genre)
