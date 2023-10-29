@@ -1,29 +1,26 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 
 from library_app.database import booksdb
-from library_app.models import User
 from library_app.query_builder import query_builder
+from library_app.routes.utils import (
+    Author,
+    BookName,
+    CurrentUser,
+    Genre1,
+    Genre2,
+    Limit,
+    Skip,
+    Type,
+    UserId,
+)
 from library_app.schemas import (
     BookPublic,
     BookPublicUnauthenticated,
     BookSchema,
     Message,
 )
-from library_app.security import get_current_user
 
 router = APIRouter(prefix='/book', tags=['book'])
-
-CurrentUser = Annotated[User, Depends(get_current_user)]
-Type = Annotated[str, Query(max_length=3, alias='type of filter')]
-UserId = Annotated[int | None, Query(ge=1, alias='user id')]
-Genre1 = Annotated[str | None, Query(max_length=15, alias='genre')]
-Genre2 = Annotated[str | None, Query(max_length=15, alias='second genre')]
-BookName = Annotated[str | None, Query(max_length=50, alias='title')]
-Author = Annotated[str | None, Query(max_length=30, alias='author name')]
-Skip = Annotated[int, Query(ge=0)]
-Limit = Annotated[int, Query(ge=1)]
 
 
 @router.get('/', response_model=list[BookPublic])
@@ -44,15 +41,11 @@ def get_books(
 
     books = list(booksdb.find(query, skip=skip, limit=limit))
 
-    if not books:
-        raise HTTPException(
-            detail='not found', status_code=status.HTTP_404_NOT_FOUND
-        )
-
-    for book in books:
-        str_id = str(book['_id'])
-        book.pop('_id')
-        book['id'] = str_id
+    if books:
+        for book in books:
+            str_id = str(book['_id'])
+            book.pop('_id')
+            book['id'] = str_id
 
     return books
 
@@ -76,16 +69,11 @@ def get_books_unauthenticated(
 
     books = list(booksdb.find(query, skip=skip, limit=limit))
 
-    if not books:
-        raise HTTPException(
-            detail='not found', status_code=status.HTTP_404_NOT_FOUND
-        )
-
-    for book in books:
-        book.pop('user_id')
-        str_id = str(book['_id'])
-        book.pop('_id')
-        book['id'] = str_id
+    if books:
+        for book in books:
+            str_id = str(book['_id'])
+            book.pop('_id')
+            book['id'] = str_id
 
     return books
 
