@@ -20,6 +20,7 @@ client = MongoClient(uri, server_api=ServerApi('1'))
 
 mongodb = client['library_app']
 booksdb = mongodb['books']
+trades = mongodb['trades']
 
 
 def get_session():
