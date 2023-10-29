@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from library_app.database import get_session, patch_user
+from library_app.database import booksdb, get_session, patch_user
 from library_app.models import User
 from library_app.schemas import (
     Message,
@@ -41,7 +41,11 @@ def create_user(user: UserSchema, session: Session):
     hashed_password = get_password_hash(user.password)
 
     db_user = User(
-        username=user.username, password=hashed_password, email=user.email
+        username=user.username,
+        password=hashed_password,
+        email=user.email,
+        genre1=user.genre1,
+        genre2=user.genre2,
     )
 
     session.add(db_user)
@@ -93,5 +97,7 @@ def delete_user(
 
     session.delete(current_user)
     session.commit()
+
+    booksdb.delete_many({'user_id': current_user.id})
 
     return {'detail': 'User deleted'}
