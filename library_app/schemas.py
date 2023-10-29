@@ -64,9 +64,12 @@ class BookSchema(BaseModel):
     number_pages: int
 
 
-class BookPublic(BookSchema):
-    user_id: int
+class BookPublicUnauthenticated(BookSchema):
     id: str
+
+
+class BookPublic(BookPublicUnauthenticated):
+    user_id: int
 
 
 class BookList(BaseModel):

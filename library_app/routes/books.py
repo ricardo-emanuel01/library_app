@@ -4,22 +4,43 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from library_app.database import booksdb
 from library_app.models import User
-from library_app.schemas import BookPublic, BookSchema, Message
+from library_app.query_builder import query_builder
+from library_app.schemas import (
+    BookPublic,
+    BookPublicUnauthenticated,
+    BookSchema,
+    Message,
+)
 from library_app.security import get_current_user
 
 router = APIRouter(prefix='/book', tags=['book'])
-
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 @router.get('/', response_model=list[BookPublic])
-def get_books_user(
+def get_books(
     user: CurrentUser,
+    type: Annotated[str, Query(max_length=3, alias='type of filter')] = 'or',
+    user_id: Annotated[int | None, Query(ge=1, alias='user id')] = None,
+    genre1: Annotated[str | None, Query(max_length=15, alias='genre')] = None,
+    genre2: Annotated[
+        str | None, Query(max_length=15, alias='second genre')
+    ] = None,
+    book_name: Annotated[
+        str | None, Query(max_length=50, alias='title')
+    ] = None,
+    author: Annotated[
+        str | None, Query(max_length=30, alias='author name')
+    ] = None,
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1)] = 10,
 ):
-    books = list(booksdb.find({'user_id': user.id}, skip=skip, limit=limit))
+    query = query_builder(
+        type, genre1, genre2, book_name, author, user_id=user_id
+    )
+
+    books = list(booksdb.find(query, skip=skip, limit=limit))
 
     if not books:
         raise HTTPException(
@@ -34,40 +55,28 @@ def get_books_user(
     return books
 
 
-@router.get('/books', response_model=list[BookPublic])
-def get_books(
-    type: Annotated[str, Query(max_length=3)] = 'or',
-    genre1: Annotated[str | None, Query(max_length=15)] = None,
-    genre2: Annotated[str | None, Query(max_length=15)] = None,
-    book_name: Annotated[str | None, Query(max_length=50)] = None,
-    author: Annotated[str | None, Query(max_length=30)] = None,
+@router.get('/books', response_model=list[BookPublicUnauthenticated])
+def get_books_unauthenticated(
+    type: Annotated[str, Query(max_length=3, alias='type of filter')] = 'or',
+    genre1: Annotated[str | None, Query(max_length=15, alias='genre')] = None,
+    genre2: Annotated[
+        str | None, Query(max_length=15, alias='second genre')
+    ] = None,
+    book_name: Annotated[
+        str | None, Query(max_length=50, alias='title')
+    ] = None,
+    author: Annotated[
+        str | None, Query(max_length=30, alias='author name')
+    ] = None,
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1)] = 10,
 ):
-    query = {}
-    if genre1:
-        if len(query) == 0:
-            query[f'${type}'] = []
-
-        query[f'${type}'].append({'genre': genre1})
-
-    if genre2:
-        if len(query) == 0:
-            query[f'${type}'] = []
-
-        query[f'${type}'].append({'genre': genre2})
-
-    if book_name:
-        if len(query) == 0:
-            query[f'${type}'] = []
-
-        query[f'${type}'].append({'name': {'$regex': book_name}})
-
-    if author:
-        if len(query) == 0:
-            query[f'${type}'] = []
-
-        query[f'${type}'].append({'author': {'$regex': author}})
+    """
+    Endpoint to show the books on the platform without expose user
+    """
+    query = query_builder(
+        type, genre1, genre2, book_name, author, user_id=None
+    )
 
     books = list(booksdb.find(query, skip=skip, limit=limit))
 
@@ -77,6 +86,7 @@ def get_books(
         )
 
     for book in books:
+        book.pop('user_id')
         str_id = str(book['_id'])
         book.pop('_id')
         book['id'] = str_id
