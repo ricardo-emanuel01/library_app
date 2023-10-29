@@ -37,19 +37,25 @@ def get_books_user(
 @router.get('/books', response_model=list[BookPublic])
 def get_books(
     type: Annotated[str, Query(max_length=3)] = 'or',
-    genres: Annotated[list[str] | None, Query()] = None,
+    genre1: Annotated[str | None, Query(max_length=15)] = None,
+    genre2: Annotated[str | None, Query(max_length=15)] = None,
     book_name: Annotated[str | None, Query(max_length=50)] = None,
     author: Annotated[str | None, Query(max_length=30)] = None,
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1)] = 10,
 ):
     query = {}
-    if genres:
+    if genre1:
         if len(query) == 0:
             query[f'${type}'] = []
-        
-        for genre in genres:
-            query[f'${type}'].append({'genre': genre})
+
+        query[f'${type}'].append({'genre': genre1})
+
+    if genre2:
+        if len(query) == 0:
+            query[f'${type}'] = []
+
+        query[f'${type}'].append({'genre': genre2})
 
     if book_name:
         if len(query) == 0:
