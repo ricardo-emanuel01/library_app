@@ -16,25 +16,27 @@ from library_app.security import get_current_user
 router = APIRouter(prefix='/book', tags=['book'])
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+Type = Annotated[str, Query(max_length=3, alias='type of filter')]
+UserId = Annotated[int | None, Query(ge=1, alias='user id')]
+Genre1 = Annotated[str | None, Query(max_length=15, alias='genre')]
+Genre2 = Annotated[str | None, Query(max_length=15, alias='second genre')]
+BookName = Annotated[str | None, Query(max_length=50, alias='title')]
+Author = Annotated[str | None, Query(max_length=30, alias='author name')]
+Skip = Annotated[int, Query(ge=0)]
+Limit = Annotated[int, Query(ge=1)]
 
 
 @router.get('/', response_model=list[BookPublic])
 def get_books(
     user: CurrentUser,
-    type: Annotated[str, Query(max_length=3, alias='type of filter')] = 'or',
-    user_id: Annotated[int | None, Query(ge=1, alias='user id')] = None,
-    genre1: Annotated[str | None, Query(max_length=15, alias='genre')] = None,
-    genre2: Annotated[
-        str | None, Query(max_length=15, alias='second genre')
-    ] = None,
-    book_name: Annotated[
-        str | None, Query(max_length=50, alias='title')
-    ] = None,
-    author: Annotated[
-        str | None, Query(max_length=30, alias='author name')
-    ] = None,
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1)] = 10,
+    type: Type = 'or',
+    user_id: UserId = None,
+    genre1: Genre1 = None,
+    genre2: Genre2 = None,
+    book_name: BookName = None,
+    author: Author = None,
+    skip: Skip = 0,
+    limit: Limit = 10,
 ):
     query = query_builder(
         type, genre1, genre2, book_name, author, user_id=user_id
@@ -57,19 +59,13 @@ def get_books(
 
 @router.get('/books', response_model=list[BookPublicUnauthenticated])
 def get_books_unauthenticated(
-    type: Annotated[str, Query(max_length=3, alias='type of filter')] = 'or',
-    genre1: Annotated[str | None, Query(max_length=15, alias='genre')] = None,
-    genre2: Annotated[
-        str | None, Query(max_length=15, alias='second genre')
-    ] = None,
-    book_name: Annotated[
-        str | None, Query(max_length=50, alias='title')
-    ] = None,
-    author: Annotated[
-        str | None, Query(max_length=30, alias='author name')
-    ] = None,
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1)] = 10,
+    type: Type = 'or',
+    genre1: Genre1 = None,
+    genre2: Genre2 = None,
+    book_name: BookName = None,
+    author: Author = None,
+    skip: Skip = 0,
+    limit: Limit = 10,
 ):
     """
     Endpoint to show the books on the platform without expose user
