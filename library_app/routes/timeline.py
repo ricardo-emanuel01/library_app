@@ -23,8 +23,8 @@ def get_timeline(
 
     query = {
         '$and': [
-            {'$or': [{'genre': genre1}, {'genre': genre2}]},
             {'user_id': {'$ne': user.id}},
+            {'$or': [{'genre': genre1}, {'genre': genre2}]},
         ]
     }
 
