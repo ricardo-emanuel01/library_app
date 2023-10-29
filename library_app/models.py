@@ -12,3 +12,5 @@ class User(Base):
     username: Mapped[str]
     password: Mapped[str]
     email: Mapped[str]
+    genre1: Mapped[str]
+    genre2: Mapped[str]

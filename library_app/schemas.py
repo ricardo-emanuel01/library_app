@@ -16,6 +16,8 @@ class Genre(str, Enum):
 class UserSchema(BaseModel):
     username: str
     email: EmailStr
+    genre1: Genre
+    genre2: Genre
     password: str
 
 
@@ -23,6 +25,8 @@ class UserPublic(BaseModel):
     id: int
     email: EmailStr
     username: str
+    genre1: Genre
+    genre2: Genre
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -30,7 +34,9 @@ class UserPublic(BaseModel):
 class UserUpdate(BaseModel):
     username: str | None = None
     email: EmailStr | None = None
-    password: str | None
+    password: str | None = None
+    genre1: Genre | None = None
+    genre2: Genre | None = None
 
 
 class UserList(BaseModel):
