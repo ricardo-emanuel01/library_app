@@ -13,6 +13,12 @@ class Genre(str, Enum):
     horror = 'horror'
 
 
+class StatusTrade(str, Enum):
+    awaiting_approval = 'awaiting approval'
+    declined = 'declined'
+    approved = 'approved'
+
+
 class UserSchema(BaseModel):
     username: str
     email: EmailStr
@@ -74,3 +80,19 @@ class BookPublic(BookPublicUnauthenticated):
 
 class BookList(BaseModel):
     books: list[BookPublic]
+
+
+class Trade(BaseModel):
+    receiver_id: int
+    book_requested: str
+    book_offered: str
+
+
+class TradeViwer(Trade):
+    status: StatusTrade
+    id: str
+    sender_id: int
+    year: int
+    month: int
+    day: int
+    hour: int
