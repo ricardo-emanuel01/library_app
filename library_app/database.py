@@ -21,6 +21,7 @@ client = MongoClient(uri, server_api=ServerApi('1'))
 mongodb = client['library_app']
 booksdb = mongodb['books']
 trades = mongodb['trades']
+notifications = mongodb['notifications']
 
 
 def get_session():
