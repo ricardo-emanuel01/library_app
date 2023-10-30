@@ -1,10 +1,16 @@
-from datetime import datetime
+from typing import Annotated
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 
-from library_app.database import booksdb, trades
-from library_app.routes.utils import CurrentUser, Limit, Skip, OfferId
+from library_app.database import booksdb, notifications, trades
+from library_app.routes.utils import (
+    build_trade_offer,
+    CurrentUser,
+    Limit,
+    Skip,
+    OfferId,
+)
 from library_app.schemas import Message, Trade, TradeViwer, StatusTrade
 
 router = APIRouter(prefix='/trade', tags=['trade'])
@@ -53,15 +59,16 @@ def post_trade_offer(user: CurrentUser, trade: Trade):
     if not book_offered:
         raise not_found_exception
 
-    now = datetime.now()
-    trade_offer['status'] = StatusTrade.awaiting_approval
-    trade_offer['sender_id'] = user.id
-    trade_offer['year'] = now.year
-    trade_offer['month'] = now.month
-    trade_offer['day'] = now.day
-    trade_offer['hour'] = now.hour
+    trade_offer_complete = build_trade_offer(user.id, trade_offer)
 
-    trades.insert_one(trade_offer)
+    new_trade = trades.insert_one(trade_offer_complete)
+    notification = {
+        'user_id': trade.receiver_id,
+        'trade_id': str(new_trade.inserted_id),
+        'new_status': StatusTrade.awaiting_approval,
+    }
+
+    notifications.insert_one(notification)
 
     return Message(detail='Trade offer sended.')
 
@@ -83,3 +90,100 @@ def delete_trade_offer(user: CurrentUser, offer_id: OfferId):
             )
 
     return Message(detail='Trade deleted.')
+
+
+@router.put('/cancel', response_model=Message)
+def cancel_trade_offer(user: CurrentUser, offer_id: OfferId):
+    id = ObjectId(offer_id)
+    query = {'_id': id, 'sender_id': user.id}
+    to_cancel = trades.find_one(query)
+    if not to_cancel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Trade offer not found.',
+        )
+
+    trades.update_one(query, {'$set': {'status': 'canceled'}})
+    # Notificar a pessoa que recebeu a oferta
+
+    return Message(detail='Trade offer canceled.')
+
+
+@router.put('/decline', response_model=Message)
+def decline_trade_offer(user: CurrentUser, offer_id: OfferId):
+    id = ObjectId(offer_id)
+    query = {'_id': id, 'receiver_id': user.id}
+    to_decline = trades.find_one(query)
+    if not to_decline:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Trade offer not found.',
+        )
+
+    trades.update_one(query, {'$set': {'status': 'declined'}})
+    # Notificar a pessoa que enviou a oferta
+
+    return Message(detail='Trade offer declined.')
+
+
+@router.put('/accept', response_model=Message)
+def accept_trade_offer(user: CurrentUser, offer_id: OfferId):
+    id = ObjectId(offer_id)
+    query = {'_id': id, 'receiver_id': user.id}
+    to_approve = trades.find_one(query)
+    if not to_approve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Trade offer not found.',
+        )
+
+    trades.update_one(query, {'$set': {'status': 'accepted'}})
+    # Notificar a pessoa que enviou a oferta
+
+    return Message(detail='Trade offer accepted.')
+
+
+@router.put('/', response_model=TradeViwer)
+def update_trade_offer(
+    user: CurrentUser,
+    offer_id: OfferId,
+    update_to: Annotated[StatusTrade, Query()],
+):
+    if update_to == StatusTrade.awaiting_approval:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Cannot update to that.',
+        )
+
+    id = ObjectId(offer_id)
+    query = {'_id': id}
+    notification = {'new_status': update_to}
+    if update_to == StatusTrade.canceled:
+        query['sender_id'] = user.id
+        notification['user_id'] = 'receiver'
+    else:
+        query['receiver_id'] = user.id
+        notification['user_id'] = 'sender'
+
+    print(query)
+    offer = trades.find_one(query)
+    if not offer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Trade offer not found.',
+        )
+
+    notification['trade_id'] = str(offer['_id'])
+    if notification['user_id'] == 'sender':
+        notification['user_id'] = offer['sender_id']
+    else:
+        notification['user_id'] = offer['receiver_id']
+
+    trades.update_one(query, {'$set': {'status': update_to}})
+    notifications.insert_one(notification)
+
+    to_return = trades.find_one(query)
+    to_return['id'] = str(to_return['_id'])
+    to_return.pop('_id')
+
+    return to_return
