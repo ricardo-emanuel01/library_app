@@ -17,6 +17,7 @@ class StatusTrade(str, Enum):
     awaiting_approval = 'awaiting approval'
     declined = 'declined'
     approved = 'approved'
+    canceled = 'canceled'
 
 
 class UserSchema(BaseModel):
