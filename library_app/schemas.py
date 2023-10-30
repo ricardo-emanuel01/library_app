@@ -16,7 +16,7 @@ class Genre(str, Enum):
 class StatusTrade(str, Enum):
     awaiting_approval = 'awaiting approval'
     declined = 'declined'
-    approved = 'approved'
+    accepted = 'accepted'
     canceled = 'canceled'
 
 
@@ -97,3 +97,9 @@ class TradeViwer(Trade):
     month: int
     day: int
     hour: int
+
+
+class Notification(BaseModel):
+    user_id: int
+    trade_id: str
+    new_status: StatusTrade
